@@ -7,6 +7,7 @@ use HZEX\DataStruct\Exception\StructReadOnlyException;
 use HZEX\DataStruct\Exception\StructUndefinedException;
 use JsonSerializable;
 use ReflectionException;
+use stdClass;
 
 /**
  * Class DataStruct
@@ -31,8 +32,8 @@ abstract class DataStruct implements ArrayAccess, JsonSerializable
     private $isHideProps = [];
     private $isReadProps = [];
 
-    /** @var array */
-    private $propertyData = [];
+    /** @var stdClass */
+    private $propertyData;
     /** @var int */
     private $changeCount = 0;
 
@@ -83,6 +84,8 @@ abstract class DataStruct implements ArrayAccess, JsonSerializable
      */
     public function __construct(iterable $iterable = [])
     {
+        $this->propertyData = new stdClass();
+
         /** @noinspection PhpUnhandledExceptionInspection */
         self::loadMeatData();
         $this->initialStruct();
@@ -107,7 +110,7 @@ abstract class DataStruct implements ArrayAccess, JsonSerializable
      */
     public function all(): array
     {
-        return $this->propertyData;
+        return get_object_vars($this->propertyData);
     }
 
     /**
@@ -118,9 +121,9 @@ abstract class DataStruct implements ArrayAccess, JsonSerializable
     {
         // 过滤隐藏值输出属性
         if (count($this->isHideProps)) {
-            return array_diff_key($this->propertyData, $this->isHideProps);
+            return array_diff_key($this->all(), $this->isHideProps);
         }
-        return $this->propertyData;
+        return $this->all();
     }
 
     /**
@@ -145,7 +148,7 @@ abstract class DataStruct implements ArrayAccess, JsonSerializable
      */
     public function __isset($name): bool
     {
-        return isset($this->propertyData[$name]);
+        return isset($this->propertyData->$name);
     }
 
     /**
@@ -154,7 +157,7 @@ abstract class DataStruct implements ArrayAccess, JsonSerializable
      */
     public function __get(string $name)
     {
-        return $this->propertyData[$name];
+        return $this->propertyData->$name;
     }
 
     /**
@@ -164,7 +167,7 @@ abstract class DataStruct implements ArrayAccess, JsonSerializable
      */
     public function __set(string $name, $value)
     {
-        if (isset($this->isReadProps[$name]) && isset($this->propertyData[$name])) {
+        if (isset($this->isReadProps[$name]) && isset($this->propertyData->$name)) {
             throw new StructReadOnlyException(static::class . '->$' . $name . ' Only Read');
         }
         if (null === ($attrInfo = $this->getMetaData()->props[$name] ?? null)) {
@@ -176,9 +179,9 @@ abstract class DataStruct implements ArrayAccess, JsonSerializable
         // 兼容初始值为Null
         if ($attrInfo->defaultValue === null
             && $value === null
-            && (!isset($this->propertyData[$name]) || $this->propertyData[$name] === null)
+            && (!isset($this->propertyData->$name) || $this->propertyData->$name === null)
         ) {
-            $this->propertyData[$name] = null;
+            $this->propertyData->$name = null;
             return;
         }
         // 类型检查
@@ -186,13 +189,13 @@ abstract class DataStruct implements ArrayAccess, JsonSerializable
 
         // 一致性检查
         if ($attrInfo
-            && isset($this->propertyData[$name])
-            && $this->propertyData[$name] === $value
+            && isset($this->propertyData->$name)
+            && $this->propertyData->$name === $value
         ) {
             // 内容一致不做更改
             return;
         }
-        $this->propertyData[$name] = $value;
+        $this->propertyData->$name = $value;
         $this->dataChange();
     }
 
@@ -280,5 +283,14 @@ abstract class DataStruct implements ArrayAccess, JsonSerializable
     public function getDataChangeCount()
     {
         return $this->changeCount;
+    }
+
+    /**
+     * 重写调试信息
+     * @return stdClass
+     */
+    public function __debugInfo()
+    {
+        return $this->propertyData;
     }
 }
