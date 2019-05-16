@@ -15,6 +15,7 @@
         "ext-fileinfo": "*",
         "ext-json": "*",
         "ext-posix": "*",
+        "ext-openssl": "*",
         "symfony/var-exporter": "^4.2"
     },
     "require-dev": {
