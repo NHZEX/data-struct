@@ -440,8 +440,11 @@ class HxDefault
      * @param int      $level
      * @return array
      */
-    public static function arraySquash(iterable $arr, $key = null, $level = 0)
+    public static function arraySquash(?iterable $arr, $key = null, $level = 0)
     {
+        if (null === $arr) {
+            return null;
+        }
         $level++;
         $result = [];
         foreach ($arr as $index => $value) {
