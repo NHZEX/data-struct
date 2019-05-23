@@ -7,7 +7,7 @@
  * Ver: 1.0.0
  */
 
-namespace Crypto;
+namespace HZEX\Crypto;
 
 use Exception;
 use LengthException;
